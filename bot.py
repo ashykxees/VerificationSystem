@@ -1,7 +1,8 @@
 """
 Discord Verification Bot
 
-Sends an embed with a Verify button. When a member clicks the button:
+Posts a verification embed with a Verify button on startup. When a member
+clicks the button:
 - Adds the configured verified role
 - Removes the configured unverified role
 - Sends an ephemeral message with the verification website link
@@ -11,7 +12,6 @@ import os
 import logging
 
 import discord
-from discord import app_commands
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,40 +26,30 @@ logger = logging.getLogger("verification_bot")
 BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 ADD_ROLE_ID = int(os.getenv("ADD_ROLE_ID", "0"))
 REMOVE_ROLE_ID = int(os.getenv("REMOVE_ROLE_ID", "0"))
+VERIFICATION_CHANNEL_ID = int(os.getenv("VERIFICATION_CHANNEL_ID", "0"))
 VERIFICATION_URL = "https://verified.ashy.enterprises"
 
-GUILD_ID = os.getenv("GUILD_ID")
-GUILD = discord.Object(id=int(GUILD_ID)) if GUILD_ID else None
-
 intents = discord.Intents.default()
-# The bot only uses slash commands and button interactions, so the
-# privileged Server Members intent is not required.
+
+
+def verification_embed() -> discord.Embed:
+    return discord.Embed(
+        title="Server Verification",
+        description=(
+            "Click the button below to verify yourself and gain access to the rest of the server.\n\n"
+            f"You will need to visit: {VERIFICATION_URL}"
+        ),
+        color=discord.Color.green(),
+    ).set_footer(text="Verification System")
 
 
 class VerificationBot(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
         # Re-register the persistent view so buttons keep working after restart
         self.add_view(VerifyView())
-
-        try:
-            if GUILD:
-                # Copy global commands to the target guild and sync there
-                # so /setup_verification appears immediately.
-                self.tree.copy_global_to(guild=GUILD)
-                await self.tree.sync(guild=GUILD)
-            else:
-                await self.tree.sync()
-        except discord.Forbidden:
-            logger.error(
-                "Failed to sync slash commands. Make sure the bot has been added "
-                "to the GUILD_ID server (if set) and has the required permissions."
-            )
-        except discord.HTTPException as exc:
-            logger.error("Failed to sync slash commands: %s", exc)
 
 
 class VerifyView(discord.ui.View):
@@ -110,34 +100,29 @@ class VerifyView(discord.ui.View):
 client = VerificationBot()
 
 
-@client.tree.command(
-    name="setup_verification",
-    description="Post the verification message in this channel.",
-)
-@app_commands.checks.has_permissions(manage_guild=True)
-async def setup_verification(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="Server Verification",
-        description=(
-            "Click the button below to verify yourself and gain access to the rest of the server.\n\n"
-            f"You will need to visit: {VERIFICATION_URL}"
-        ),
-        color=discord.Color.green(),
-    )
-    embed.set_footer(text="Verification System")
-
-    await interaction.response.send_message(
-        "Verification message sent below.",
-        ephemeral=True,
-    )
-
-    if isinstance(interaction.channel, discord.TextChannel):
-        await interaction.channel.send(embed=embed, view=VerifyView())
-
-
 @client.event
 async def on_ready():
     logger.info("Logged in as %s (ID: %s)", client.user, client.user.id)
+
+    if not VERIFICATION_CHANNEL_ID:
+        logger.error("VERIFICATION_CHANNEL_ID is not set.")
+        return
+
+    try:
+        channel = await client.fetch_channel(VERIFICATION_CHANNEL_ID)
+    except discord.NotFound:
+        logger.error("Verification channel %s not found.", VERIFICATION_CHANNEL_ID)
+        return
+    except discord.HTTPException as exc:
+        logger.error("Failed to fetch verification channel: %s", exc)
+        return
+
+    if not isinstance(channel, discord.TextChannel):
+        logger.error("Verification channel %s is not a text channel.", VERIFICATION_CHANNEL_ID)
+        return
+
+    await channel.send(embed=verification_embed(), view=VerifyView())
+    logger.info("Verification embed posted in %s.", channel)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Verification System
 
-A Discord bot that sends a verification embed with a single button. When a member clicks the button, it:
+A Discord bot that posts a verification embed with a single button on startup. When a member clicks the button, it:
 
 - Adds a configured role (e.g. a verified/member role)
 - Removes a configured role (e.g. an unverified role)
@@ -31,7 +31,7 @@ The bot's highest role must be above the roles it manages.
    - `DISCORD_BOT_TOKEN` — your bot token
    - `ADD_ROLE_ID` — the role ID to add on verification
    - `REMOVE_ROLE_ID` — the role ID to remove on verification
-   - `GUILD_ID` — optional, for faster slash-command sync. Only use this after the bot has been added to that server.
+   - `VERIFICATION_CHANNEL_ID` — the channel ID where the bot will post the verification embed
 3. Install dependencies:
    ```bash
    pip install -r requirements.txt
@@ -41,27 +41,19 @@ The bot's highest role must be above the roles it manages.
    python bot.py
    ```
 
+The bot will post the verification embed in the configured channel as soon as it connects.
+
 ## Deploy to Railway
 
 1. Push your code to GitHub.
 2. In the Railway dashboard, create a new project and deploy from this repository.
-3. In the **Variables** tab, add the environment variables from your `.env` file:
+3. In the **Variables** tab, add the environment variables:
    - `DISCORD_BOT_TOKEN`
    - `ADD_ROLE_ID`
    - `REMOVE_ROLE_ID`
-   - `GUILD_ID` (optional)
+   - `VERIFICATION_CHANNEL_ID`
 4. The `Procfile` already tells Railway to run the bot as a worker with `python bot.py`.
-5. Make sure the bot has been invited to your server before starting Railway.
-
-## Usage
-
-An admin or anyone with `Manage Server` permission can run:
-
-```
-/setup_verification
-```
-
-This posts the verification embed to the current channel. Members click the green **Verify** button to receive the configured role changes and the verification prompt.
+5. Invite the bot to your server before starting Railway, and make sure the bot has access to the `VERIFICATION_CHANNEL_ID` channel.
 
 ## Bot Permissions
 
