@@ -45,11 +45,14 @@ class VerificationBot(discord.Client):
         # Re-register the persistent view so buttons keep working after restart
         self.add_view(VerifyView())
 
-        if GUILD:
-            self.tree.copy_global_to(guild=GUILD)
-
         try:
-            await self.tree.sync()
+            if GUILD:
+                # Copy global commands to the target guild and sync there
+                # so /setup_verification appears immediately.
+                self.tree.copy_global_to(guild=GUILD)
+                await self.tree.sync(guild=GUILD)
+            else:
+                await self.tree.sync()
         except discord.Forbidden:
             logger.error(
                 "Failed to sync slash commands. Make sure the bot has been added "
