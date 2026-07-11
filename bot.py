@@ -39,10 +39,7 @@ intents = discord.Intents.default()
 def verification_embed() -> discord.Embed:
     return discord.Embed(
         title="Server Verification",
-        description=(
-            "Click the button below to verify yourself and gain access to the rest of the server.\n\n"
-            f"You will need to visit: {VERIFICATION_URL}"
-        ),
+        description="Click the button below to verify yourself and gain access to the rest of the server.",
         color=discord.Color.green(),
     ).set_footer(text="Verification System")
 
