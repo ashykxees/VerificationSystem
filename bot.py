@@ -72,6 +72,13 @@ class VerifyView(discord.ui.View):
         add_role = interaction.guild.get_role(ADD_ROLE_ID)
         remove_role = interaction.guild.get_role(REMOVE_ROLE_ID)
 
+        # Acknowledge the interaction immediately so Discord does not time out
+        # while the bot is calling the API to update the member's roles.
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except discord.InteractionResponded:
+            pass
+
         try:
             if add_role and add_role not in member.roles:
                 await member.add_roles(add_role, reason="Verification bot")
@@ -79,19 +86,19 @@ class VerifyView(discord.ui.View):
             if remove_role and remove_role in member.roles:
                 await member.remove_roles(remove_role, reason="Verification bot")
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Visit the following website to become verified and gain access to the rest of the server:\n"
                 f"<{VERIFICATION_URL}>",
                 ephemeral=True,
             )
         except discord.Forbidden:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "I don't have permission to update your roles. Please contact a server administrator.",
                 ephemeral=True,
             )
         except discord.HTTPException as exc:
             logger.exception("Failed to update roles for %s: %s", member, exc)
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Something went wrong while updating your roles. Please try again later.",
                 ephemeral=True,
             )
