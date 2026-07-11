@@ -32,6 +32,7 @@ The bot's highest role must be above the roles it manages.
    - `ADD_ROLE_ID` — the role ID to add on verification
    - `REMOVE_ROLE_ID` — the role ID to remove on verification
    - `VERIFICATION_CHANNEL_ID` — the channel ID where the bot will post the verification embed
+   - `GUILD_ID` — the server ID where the bot is invited (used to clear old slash commands)
 3. Install dependencies:
    ```bash
    pip install -r requirements.txt
@@ -52,6 +53,7 @@ The bot will post the verification embed in the configured channel as soon as it
    - `ADD_ROLE_ID`
    - `REMOVE_ROLE_ID`
    - `VERIFICATION_CHANNEL_ID`
+   - `GUILD_ID` (optional, but recommended to remove old slash commands)
 4. The `Procfile` already tells Railway to run the bot as a worker with `python bot.py`.
 5. Invite the bot to your server before starting Railway, and make sure the bot has access to the `VERIFICATION_CHANNEL_ID` channel.
 
