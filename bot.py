@@ -32,7 +32,8 @@ GUILD_ID = os.getenv("GUILD_ID")
 GUILD = discord.Object(id=int(GUILD_ID)) if GUILD_ID else None
 
 intents = discord.Intents.default()
-intents.members = True
+# The bot only uses slash commands and button interactions, so the
+# privileged Server Members intent is not required.
 
 
 class VerificationBot(discord.Client):
@@ -46,7 +47,16 @@ class VerificationBot(discord.Client):
 
         if GUILD:
             self.tree.copy_global_to(guild=GUILD)
-        await self.tree.sync()
+
+        try:
+            await self.tree.sync()
+        except discord.Forbidden:
+            logger.error(
+                "Failed to sync slash commands. Make sure the bot has been added "
+                "to the GUILD_ID server (if set) and has the required permissions."
+            )
+        except discord.HTTPException as exc:
+            logger.error("Failed to sync slash commands: %s", exc)
 
 
 class VerifyView(discord.ui.View):
