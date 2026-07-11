@@ -12,6 +12,7 @@ import os
 import logging
 
 import discord
+from discord import app_commands
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,6 +29,9 @@ ADD_ROLE_ID = int(os.getenv("ADD_ROLE_ID", "0"))
 REMOVE_ROLE_ID = int(os.getenv("REMOVE_ROLE_ID", "0"))
 VERIFICATION_CHANNEL_ID = int(os.getenv("VERIFICATION_CHANNEL_ID", "0"))
 VERIFICATION_URL = "https://verified.ashy.enterprises"
+
+GUILD_ID = os.getenv("GUILD_ID")
+GUILD = discord.Object(id=int(GUILD_ID)) if GUILD_ID else None
 
 intents = discord.Intents.default()
 
@@ -46,10 +50,28 @@ def verification_embed() -> discord.Embed:
 class VerificationBot(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
         # Re-register the persistent view so buttons keep working after restart
         self.add_view(VerifyView())
+
+        # Clear any old slash commands that may still be registered from
+        # earlier versions of the bot (e.g. /setup_verification).
+        try:
+            if GUILD:
+                self.tree.clear_commands(guild=GUILD)
+                await self.tree.sync(guild=GUILD)
+            else:
+                self.tree.clear_commands()
+                await self.tree.sync()
+        except discord.Forbidden:
+            logger.error(
+                "Failed to clear old slash commands. Make sure the bot is in the "
+                "GUILD_ID server (if set) and has the required permissions."
+            )
+        except discord.HTTPException as exc:
+            logger.error("Failed to clear old slash commands: %s", exc)
 
 
 class VerifyView(discord.ui.View):
